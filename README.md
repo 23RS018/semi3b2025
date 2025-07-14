@@ -51,7 +51,7 @@
 
 #### パソコンに Python と Jupyter Notebook をインストールする
 
-- このプログラムは「Python」と「Jupyter Notebook」というソフトを使って動きます。
+- このプログラムは「Python」と「Jupyter Notebook」というソフトを使って動く。
 #### 仮想環境をする(Anaconda Prompt)
 ```
 - conda create -n 名前 python=バージョン
