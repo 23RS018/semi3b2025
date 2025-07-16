@@ -69,8 +69,7 @@ Jupyter Notebook 上で以下のセルを実行してください。
 
 ```python
 # ── セル 1: ライブラリのインストール ──────────────
-!pip install -q pdfplumber pandas openpyxl
-!pip install -q japanize-matplotlib
+!pip install -q pdfplumber pandas openpyxl japanize-matplotlib
 ```
 ### 4.3プログラムを実行する
 
