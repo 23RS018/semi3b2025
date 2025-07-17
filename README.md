@@ -143,13 +143,85 @@ for col in (qty_col, price_col, amt_col):
           .str.strip()
           .astype(float)
     )
- 
 df[qty_col]   = df[qty_col].astype(int)
 df[price_col] = df[price_col].astype(int)
 df[amt_col]   = df[amt_col].astype(int)
  
 display(df.head())  # プレビュー
 ```
+  ```
+ 6. Excel へ書き出し
+ ```python
+ # 保存先ディレクトリ
+save_dir = Path(r"C:\Users\User\Documents\GitHub\semi3b2025")
+
+# Excelファイルのパスを作成
+excel_path = save_dir / "商品発注表.xlsx"
+
+# Excelファイルを書き出す
+df.to_excel(excel_path, index=False, engine="openpyxl")
+
+# 絶対パスを表示
+print(f"Excel ファイルを保存しました → {excel_path.resolve()}")
+ ```
+ 7. 数量を棒グラフで可視化
+ ```python
+ # 保存先ディレクトリ
+save_dir = Path(r"C:\Users\User\Documents\GitHub\semi3b2025")
+
+# ディレクトリが存在しない場合は作成する（任意）
+save_dir.mkdir(parents=True, exist_ok=True)
+
+# グラフに使うキー（商品名があれば優先、無ければ商品コード）
+group_key = "商品名" if "商品名" in df.columns else "商品コード"
+
+# 品目ごと数量を合計して多い順に並べ替え
+qty_by_item = (
+    df.groupby(group_key)[qty_col]
+      .sum()
+      .sort_values(ascending=False)
+)
+
+plt.figure(figsize=(10, 6))
+qty_by_item.head(20).plot(kind="bar")          # 上位 20 品目を表示
+plt.title("商品の数量（上位 20 品目）")
+plt.ylabel("数量")
+plt.xlabel(group_key)
+plt.xticks(rotation=45, ha="right")
+plt.tight_layout()
+
+# 保存パスを作成
+image_path = save_dir / "graph.png"
+
+# 画像ファイルとして保存
+plt.savefig(image_path, dpi=300)
+
+print(f"グラフ画像を保存しました → {image_path.resolve()}")
+
+plt.show()
+ ```
+ 8. 追加で解析
+ ```python
+ print("▼ 集計レポート")
+total_qty = df[qty_col].sum()
+total_amt = df[amt_col].sum()
+total_amt_tax = total_amt * 1.10
+
+print(f"  総数量          : {total_qty:,}")
+print(f"  総金額 (税抜)   : {total_amt:,}")
+print(f"  総金額 (税込)   : {total_amt_tax:,.0f}")
+
+print("\n▼ 数量 上位 5 品目")
+display(qty_by_item.head(5).to_frame(name="数量"))
+
+print("\n▼ 金額 上位 5 品目")
+amt_by_item = (
+    df.groupby(group_key)[amt_col]
+      .sum()
+      .sort_values(ascending=False)
+)
+display(amt_by_item.head(5).to_frame(name="金額 (円)"))
+ ```
 
 ## 5.今後の予定
 - 柔軟な表形式データの抽出・解析を可能にする。
