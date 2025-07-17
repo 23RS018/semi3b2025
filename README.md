@@ -49,30 +49,107 @@
 
 ### 4.1 事前準備
 
-#### パソコンに Python と Jupyter Notebook をインストールする
+#### 1. パソコンに Python と Jupyter Notebook をインストールする
 
 - このプログラムは「Python」と「Jupyter Notebook」というソフトを使って動く。
-#### 仮想環境をする(Anaconda Prompt)
+#### 2. C:\Users\User\Documents\GitHub\semi3b2025のようにディレクトリを準備しておく
+
+- このプログラムは以上のディレクトリ内にExcel（.xlsx）、PNG画像（グラフ）が保存される。
+
+
+#### 3. 仮想環境を作成する(Anaconda Prompt)
 ```
-- conda create -n 名前 python=バージョン
-- conda activate 名前
+ conda create -n 名前 python=バージョン
+ conda activate 名前
 ```
-#### jupyterを開く
+#### 4. カーネルを作成する
 ```
-- jupyter notebook
+pip install ipykernel
+python -m ipykernel install --user --name 名前
 ```
+#### 5. jupyterを開く
+```
+ jupyter notebook
+```
+#### 6. 作成したカーネルの名前の新しいnotebookを作る
+
+
 ---
 
-### 4.2 Jupyter Notebook でライブラリをインストールする
+### 4.2 jupyter notebookでプログラムを実行する。
 
-Jupyter Notebook 上で以下のセルを実行してください。  
+1. ライブラリをインストールする  
 
 ```python
-# ── セル 1: ライブラリのインストール ──────────────
 !pip install -q pdfplumber pandas openpyxl japanize-matplotlib
 ```
-### 4.3プログラムを実行する
-
+2. インポートをする
+```python
+import pdfplumber, pandas as pd
+from pathlib import Path
+import matplotlib.pyplot as plt
+import japanize_matplotlib
+```
+3. pdfからテーブルを抽出
+```python
+pdf_path = Path("商品発注表.pdf")
+assert pdf_path.exists(), f"PDF が見つかりません: {pdf_path.resolve()}"
+ 
+tables = []
+with pdfplumber.open(pdf_path) as pdf:
+    for page in pdf.pages:
+        tables.extend(page.extract_tables())
+ 
+# ヘッダーに「商品コード」があるテーブルを採用
+df = None
+for tbl in tables:
+    if tbl and any("商品コード" in (cell or "") for cell in tbl[0]):
+        df = pd.DataFrame(tbl[1:], columns=tbl[0])
+        break
+if df is None:
+    raise ValueError("対象となるテーブルが見つかりません。")
+ 
+print("抽出列:", df.columns.tolist())  # 列名を確認
+```
+4. 列名を標準化し、必要列を自動検出
+```python 
+df = df.rename(
+    columns=lambda c: (
+        c.strip()
+         .replace("（", "(")
+         .replace("）", ")")
+         .replace(" ", "")
+         .replace("\t", "")
+    )
+)
+ 
+# キーワードで列名を見つける
+qty_col   = next((c for c in df.columns if "数量" in c),  None)
+price_col = next((c for c in df.columns if "単価" in c),  None)
+amt_col   = next((c for c in df.columns if "金額" in c),  None)
+ 
+print("数量列:", qty_col, "| 単価列:", price_col, "| 金額列:", amt_col)
+if None in (qty_col, price_col, amt_col):
+    raise KeyError("数量・単価・金額に該当する列が見つかりません。")
+```
+5. 数値列の整形
+```python
+for col in (qty_col, price_col, amt_col):
+    df[col] = (
+        df[col]
+          .astype(str)
+          .str.replace(",", "", regex=False)
+          .str.replace("円", "", regex=False)
+          .str.strip()
+          .astype(float)
+    )
+ 
+df[qty_col]   = df[qty_col].astype(int)
+df[price_col] = df[price_col].astype(int)
+df[amt_col]   = df[amt_col].astype(int)
+ 
+display(df.head())  # プレビュー
+```
 
 ## 5.今後の予定
 - 柔軟な表形式データの抽出・解析を可能にする。
